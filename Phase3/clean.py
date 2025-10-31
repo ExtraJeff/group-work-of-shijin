@@ -88,7 +88,7 @@ plt.close()
 print("📊 年度累计趋势图已保存为 linknyc_yearly_trend.png")
 
 # ========== 9. 创建年度累积节点分布图 ==========
-nybb_path = r"C:\Users\Jeffery\Desktop\石进大作业\Phase2\nybb.shp"
+nybb_path = r"C:\Users\Jeffery\Desktop\石进大作业\自治区级别边界\nybb.shp"
 nyc_boundary = gpd.read_file(nybb_path)
 if nyc_boundary.crs != "EPSG:4326":
     nyc_boundary = nyc_boundary.to_crs("EPSG:4326")
