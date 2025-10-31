@@ -1,0 +1,27 @@
+# NYC应急管控研究项目依赖库
+# 数据处理和分析库
+pandas==2.0.3
+numpy==1.24.3
+geopandas==0.13.2
+scipy==1.10.1
+
+# 可视化库
+matplotlib==3.7.2
+folium==0.14.0
+seaborn==0.12.2
+branca==0.6.0
+
+# 机器学习库
+scikit-learn==1.3.0
+
+# Web界面库
+dash==2.13.0
+dash-bootstrap-components==1.4.2
+
+# 地理空间处理依赖
+pyproj==3.6.0
+shapely==2.0.1
+fiona==1.9.4
+
+# 其他依赖
+notebook==7.0.0  # 可选，用于在Jupyter中运行和测试代码
