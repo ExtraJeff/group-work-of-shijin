@@ -18,16 +18,8 @@ except ImportError as e:
     print("请运行: pip install dash dash-bootstrap-components")
     sys.exit(1)
 
-# 初始化应用
-app = dash.Dash(
-    __name__, 
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
-    suppress_callback_exceptions=True
-)
-app.title = "NYC 应急管控研究仪表盘"
-
 # 基础路径 - 请根据实际情况修改
-BASE_PATH = r"C:\Users\Jeffery\Desktop\石进大作业"
+BASE_PATH = r"C:\Users\Jeffery\Desktop\代码工程"
 
 # 全局缓存字典，用于存储预加载的内容
 content_cache = {}
@@ -38,7 +30,7 @@ phase_htmls = {
         ("建筑变化地图", "Phase1/outputs/maps/NYC_Building_Change_2016_2025_grid_agg.html")
     ],
     "Phase2": [
-        ("行政区更新指数", "Phase2/borough_update_index_map.html")
+        ("行政区更新指数", "Phase2/outputs/borough_update_index_map.html")
     ],
     "Phase3": [
         ("节点时间轴", "Phase3/outputs/linknyc_nodes_timeline.html"),
@@ -147,6 +139,412 @@ def get_file_content(file_path):
     except Exception as e:
         print(f"文件读取失败: {file_path}, 错误: {e}")
         return f"<h3>文件加载失败</h3><p>错误: {str(e)}</p>"
+
+def export_static_html(output_path="nyc_dashboard_static.html"):
+    """导出静态HTML版本的仪表盘"""
+    print(f"📤 正在导出静态HTML到: {output_path}")
+    
+    # 生成所有阶段的内容
+    all_content = {}
+    
+    # 主页内容
+    all_content["/"] = generate_homepage_content()
+    
+    # 各阶段内容
+    for phase_num in range(1, 7):
+        phase_key = f"Phase{phase_num}"
+        all_content[f"/phase{phase_num}"] = generate_phase_content(phase_num)
+    
+    # 生成完整的HTML
+    html_template = generate_static_html_template(all_content)
+    
+    # 保存文件
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_template)
+        print(f"✅ 静态HTML导出成功: {output_path}")
+        return True
+    except Exception as e:
+        print(f"❌ 导出失败: {e}")
+        return False
+
+def generate_homepage_content():
+    """生成主页HTML内容"""
+    total_files = sum(len(files) for files in phase_htmls.values())
+    loaded_files = sum(1 for data in content_cache.values() if data['type'] in ['html', 'image'])
+    missing_files = sum(1 for data in content_cache.values() if data['type'] == 'missing')
+    
+    return f'''
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <div>
+            <h1 style="text-align: center; color: #2c3e50; margin-bottom: 10px; font-weight: bold;">🏙️ NYC 应急管控能力研究</h1>
+            <p style="text-align: center; color: #7f8c8d; margin-bottom: 40px; font-size: 16px;">基于多源数据的城市应急管控能力综合分析平台</p>
+        </div>
+        
+        <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+            <div style="flex: 1; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background-color: #3498db; padding: 15px; border-radius: 10px 10px 0 0;">
+                    <h4 style="margin: 0; color: white;">📋 项目概述</h4>
+                </div>
+                <div style="padding: 25px;">
+                    <p style="line-height: 1.6;">本仪表盘整合了纽约市应急管控能力研究的六个阶段分析成果，涵盖从建筑变化分析到社区特征聚类的完整研究流程。</p>
+                    <hr>
+                    <h5 style="color: #2c3e50; margin-bottom: 15px;">🔍 研究流程:</h5>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>Phase 1:</strong> 建筑存量与变化时空分析</li>
+                        <li><strong>Phase 2:</strong> 行政区级建筑更新指数</li>
+                        <li><strong>Phase 3:</strong> LinkNYC通信设施时空分布</li>
+                        <li><strong>Phase 4:</strong> 建筑通信需求指数建模</li>
+                        <li><strong>Phase 5:</strong> 应急管控能力指数(EMCI)</li>
+                        <li><strong>Phase 6:</strong> 社区特征聚类分析</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div style="flex: 1; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="background-color: #27ae60; padding: 15px; border-radius: 10px 10px 0 0;">
+                    <h4 style="margin: 0; color: white;">💡 使用指南</h4>
+                </div>
+                <div style="padding: 25px;">
+                    <p style="line-height: 1.6;">点击左侧导航栏选择不同阶段查看详细分析结果</p>
+                    <hr>
+                    <h5 style="color: #2c3e50; margin-bottom: 15px;">📊 可视化类型:</h5>
+                    <ul style="line-height: 1.8;">
+                        <li>🗺️ 交互式地图 - 支持缩放、平移</li>
+                        <li>📈 静态图表 - 聚类分析结果</li>
+                        <li>⏱️ 时间序列 - 动态变化展示</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h4 style="margin-top: 50px; margin-bottom: 20px; text-align: center;">📊 系统状态</h4>
+            <div style="background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 25px;">
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h5 style="margin-bottom: 15px; color: #2c3e50;">📊 预加载统计</h5>
+                        <div>
+                            <div style="margin-bottom: 8px; font-size: 15px;">
+                                <span style="font-weight: bold; color: #27ae60;">✅ 已加载: </span>
+                                <span>{loaded_files}/{total_files} 个文件</span>
+                            </div>
+                            <div style="margin-bottom: 8px; font-size: 15px;">
+                                <span style="font-weight: bold; color: #e67e22;">⚠️ 缺失文件: </span>
+                                <span>{missing_files} 个</span>
+                            </div>
+                            <div style="font-size: 15px;">
+                                <span style="font-weight: bold; color: #3498db;">🚀 系统状态: </span>
+                                <span style="color: #27ae60;">预加载完成，切换无延迟</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h5 style="margin-bottom: 15px; color: #2c3e50;">💡 性能特点</h5>
+                        <ul style="font-size: 14px; line-height: 1.6;">
+                            <li>所有文件已预加载到内存</li>
+                            <li>页面切换即时响应</li>
+                            <li>支持离线查看（已加载内容）</li>
+                            <li>优化的用户体验</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    '''
+
+def generate_phase_content(phase_num):
+    """生成阶段内容HTML"""
+    phase_key = f"Phase{phase_num}"
+    
+    if phase_key not in phase_htmls:
+        return '''
+        <div style="padding: 20px;">
+            <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; border: 1px solid #f5c6cb;">
+                <h4 style="margin: 0;">❌ 阶段不存在</h4>
+                <p style="margin: 10px 0 0 0;">未找到该阶段的内容</p>
+            </div>
+        </div>
+        '''
+    
+    elements = []
+    
+    # 阶段标题区域
+    elements.append(f'''
+    <div>
+        <h2 style="color: #2c3e50; margin-bottom: 10px; font-weight: bold;">📁 {phase_key} 分析结果</h2>
+        <p style="color: #7f8c8d; margin-bottom: 30px; font-size: 16px;">{get_phase_description(phase_num)}</p>
+        <hr style="margin-bottom: 30px;">
+    </div>
+    ''')
+    
+    file_count = 0
+    for title, relative_path in phase_htmls[phase_key]:
+        cache_key = f"{phase_key}_{title}"
+        
+        if cache_key not in content_cache:
+            elements.append(f'''
+            <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeaa7; margin: 10px 0;">
+                <h5 style="margin: 0 0 10px 0;">⚠️ 内容未预加载: {title}</h5>
+                <p style="font-size: 12px; margin: 0;">请重新启动应用以预加载所有内容</p>
+            </div>
+            ''')
+            continue
+        
+        cached_data = content_cache[cache_key]
+        
+        if cached_data['type'] == 'missing':
+            elements.append(f'''
+            <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #ffeaa7; margin: 10px 0;">
+                <h5 style="margin: 0 0 10px 0;">⚠️ 文件缺失: {title}</h5>
+                <p style="font-size: 12px; margin: 0;">路径: {cached_data['path']}</p>
+            </div>
+            ''')
+            continue
+        
+        if cached_data['type'] == 'error':
+            elements.append(f'''
+            <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; border: 1px solid #f5c6cb; margin: 10px 0;">
+                <h5 style="margin: 0 0 10px 0;">❌ 加载错误: {title}</h5>
+                <p style="font-size: 12px; margin: 0;">{cached_data['content']}</p>
+            </div>
+            ''')
+            continue
+        
+        file_count += 1
+        
+        # 根据文件类型显示内容
+        if cached_data['type'] == 'html':
+            elements.append(f'''
+            <div>
+                <h4 style="color: #27ae60; margin-bottom: 15px; margin-top: 30px; font-weight: bold;">🗺️ {title}</h4>
+                <iframe srcdoc="{cached_data['content'].replace('"', '&quot;')}" 
+                        style="width: 100%; height: 600px; border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                </iframe>
+            </div>
+            ''')
+            
+        elif cached_data['type'] == 'image':
+            elements.append(f'''
+            <div>
+                <h4 style="color: #8e44ad; margin-bottom: 15px; margin-top: 30px; font-weight: bold;">📊 {title}</h4>
+                <div style="text-align: center;">
+                    <img src="{cached_data['content']}" 
+                         style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                </div>
+            </div>
+            ''')
+    
+    if file_count == 0:
+        elements.append('''
+        <div style="background-color: #d1ecf1; color: #0c5460; padding: 20px; border-radius: 8px; border: 1px solid #bee5eb; margin-top: 50px; text-align: center;">
+            <h4 style="margin: 0 0 10px 0;">📭 暂无可用内容</h4>
+            <p style="margin: 0;">该阶段的所有文件当前不可用，请检查文件路径或重新生成分析结果。</p>
+        </div>
+        ''')
+    
+    return f'<div style="max-width: 1200px; margin: 0 auto;">{"".join(elements)}</div>'
+
+def generate_static_html_template(all_content):
+    """生成完整的静态HTML模板"""
+    # 生成导航链接
+    nav_links = ""
+    for i in range(1, 7):
+        nav_links += f'''
+        <div class="nav-item">
+            <a href="#phase{i}" class="nav-link" onclick="showPage('phase{i}')">
+                <span style="font-weight: bold;">Phase {i}</span><br>
+                <span style="font-size: 11px; color: #95a5a6;">{get_phase_description(i)}</span>
+            </a>
+        </div>
+        '''
+    
+    # 生成页面内容
+    page_contents = ""
+    for path, content in all_content.items():
+        page_id = "home" if path == "/" else path.replace("/", "")
+        display = "block" if path == "/" else "none"
+        page_contents += f'<div id="{page_id}-page" class="page-content" style="display: {display};">{content}</div>'
+    
+    return f'''
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC 应急管控研究仪表盘 - 静态版</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }}
+        
+        body {{
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }}
+        
+        .container {{
+            display: flex;
+            min-height: 100vh;
+        }}
+        
+        .sidebar {{
+            width: 250px;
+            background-color: #ffffff;
+            padding: 0;
+            min-height: 100vh;
+            border-right: 2px solid #e9ecef;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }}
+        
+        .main-content {{
+            flex: 1;
+            padding: 20px;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            overflow-y: auto;
+        }}
+        
+        .nav-link {{
+            display: block;
+            margin: 8px 0;
+            border-radius: 8px;
+            font-size: 13px;
+            padding: 12px 15px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+            color: #495057;
+            background-color: #f8f9fa;
+            text-decoration: none;
+        }}
+        
+        .nav-link:hover {{
+            background-color: #e9ecef !important;
+            color: #0056b3 !important;
+            transform: translateX(5px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-decoration: none;
+        }}
+        
+        .nav-link.active {{
+            background-color: #3498db !important;
+            color: white !important;
+            border-color: #3498db !important;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }}
+        
+        .home-link {{
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 12px 15px;
+            background-color: #3498db;
+            color: white;
+            text-align: center;
+            border: none;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }}
+        
+        .home-link:hover {{
+            background-color: #2980b9 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+            text-decoration: none;
+            color: white;
+        }}
+        
+        .page-content {{
+            display: none;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div style="padding: 20px 10px; border-bottom: 2px solid #e9ecef;">
+                <div style="font-size: 40px; text-align: center; margin-bottom: 10px;">🏙️</div>
+                <h2 style="text-align: center; color: #2c3e50; font-size: 22px; font-weight: bold; margin-bottom: 5px;">NYC 研究</h2>
+                <p style="text-align: center; color: #7f8c8d; font-size: 12px; margin-bottom: 20px;">应急管控能力分析</p>
+            </div>
+            
+            <a href="#home" class="home-link" onclick="showPage('home')">🏠 返回主页</a>
+            
+            <hr style="margin: 20px 0; border-color: #dee2e6;">
+            
+            <div>
+                <h4 style="color: #2c3e50; font-size: 16px; margin-bottom: 15px; padding-left: 10px;">📁 研究阶段</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    {nav_links}
+                </div>
+            </div>
+            
+            <div style="margin-top: auto;">
+                <hr style="margin: 25px 0 15px 0; border-color: #dee2e6;">
+                <div style="text-align: center;">
+                    <p style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-bottom: 8px;">🗂️ 项目信息</p>
+                    <p style="font-size: 11px; color: #7f8c8d; margin-bottom: 2px;">NYC应急管控能力研究</p>
+                    <p style="font-size: 11px; color: #7f8c8d; margin-bottom: 0;">六阶段综合分析</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="main-content">
+            {page_contents}
+        </div>
+    </div>
+
+    <script>
+        function showPage(pageId) {{
+            // 隐藏所有页面
+            document.querySelectorAll('.page-content').forEach(page => {{
+                page.style.display = 'none';
+            }});
+            
+            // 显示选中的页面
+            document.getElementById(pageId + '-page').style.display = 'block';
+            
+            // 更新导航链接状态
+            document.querySelectorAll('.nav-link').forEach(link => {{
+                link.classList.remove('active');
+            }});
+            
+            // 为当前活动的链接添加active类
+            if (pageId !== 'home') {{
+                const activeLink = document.querySelector(`a[href="#${{pageId}}"]`);
+                if (activeLink) {{
+                    activeLink.classList.add('active');
+                }}
+            }}
+        }}
+        
+        // 默认显示主页
+        document.addEventListener('DOMContentLoaded', function() {{
+            showPage('home');
+        }});
+    </script>
+</body>
+</html>
+'''
+
+# 初始化应用（只初始化一次）
+app = dash.Dash(
+    __name__, 
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    suppress_callback_exceptions=True
+)
+app.title = "NYC 应急管控研究仪表盘"
 
 # 美化边栏
 sidebar = dbc.Col(
@@ -634,7 +1032,11 @@ if __name__ == "__main__":
     # 预加载所有内容
     loaded_files, total_files = preload_all_content()
     
+    # 导出静态HTML版本
+    export_static_html()
+    
     print("🌐 访问地址: http://127.0.0.1:8050")
+    print("📄 静态HTML已导出: nyc_dashboard_static.html")
     print("💡 提示: 按 Ctrl+C 停止服务器")
     print("=" * 50)
     
